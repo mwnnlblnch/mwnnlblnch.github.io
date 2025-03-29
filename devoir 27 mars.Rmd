@@ -13,7 +13,7 @@ navbar:
       href: 08resultat.html
   right:
     - icon: fa-github
-      href: "https://beababa.github.io"
+      href: "https://mwnnlblnch.github.io"
 output: 
   html_document:
     toc_float: true  
