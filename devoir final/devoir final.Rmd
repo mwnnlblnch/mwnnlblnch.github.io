@@ -1,0 +1,145 @@
+---
+title: "Cartographie des musées"
+output: html_document
+date: "2025-05-05"
+---
+
+## R Markdown
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(readxl)
+library(mapview)
+library(sf)         # Pour les fichiers géographiques (shapefile, GeoJSON, etc.)
+library(leaflet)  
+library(dplyr)  
+library(ggplot2)
+
+```
+
+```{r}
+plu <- st_read("14118_ZONE_URBA_20240627.shp")
+```
+
+```{r}
+plu_wgs84 <- st_transform(plu, crs = 4326)
+```
+
+```{r}
+library(mapview)
+mapview(plu_wgs84)
+```
+
+```{r}
+data_culture <- read_excel("caenmusees2.xlsx")
+# Vérifie que tu as bien des colonnes Longitude et Latitude
+```
+
+```{r}
+culture_sf <- st_as_sf(data_culture,
+                       coords = c("Longitude", "Latitude"),
+                       crs = 4326)
+```
+
+```{r}
+mapview(plu_wgs84, alpha.regions = 0.3, col.regions = "lightblue") +
+  mapview(culture_sf, zcol = "Nom officiel du musée", color = "red")
+```
+
+```{r}
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = plu, color = "#444444", weight = 1, fillOpacity = 0.3, popup = ~NULL) %>% 
+  addCircleMarkers(data = data_culture, 
+                   radius = 5, 
+                   color = "blue", 
+                   stroke = FALSE, 
+                   fillOpacity = 0.8, 
+                   popup = ~NULL)
+```
+
+```{r}
+data_excel <- read_excel("caenmusees2.xlsx")
+```
+
+```{r}
+summary(data_excel)      # Résumé statistique
+head(data_excel)
+```
+
+
+```{r}
+library(DT)
+datatable(data_excel)
+```
+```{r}
+data_excel$Longitude <- as.numeric(data_excel$Longitude)
+data_excel$Latitude <- as.numeric(data_excel$Latitude)
+```
+
+
+## Carte interactive
+
+```{r}
+mapview(data_excel, 
+        xcol = "Longitude", 
+        ycol = "Latitude", 
+        popup = data_excel$`Nom officiel du musée`,
+        crs = 4326)  # WGS84
+```
+#deuxieme cartographie 
+
+```{r}
+geojson_file <- "culturecheznous.geojson"
+cities_sf <- st_read(geojson_file)
+```
+
+```{r}
+head(cities_sf)
+```
+```{r}
+caen_sf <- cities_sf %>%
+  filter(commune == "Caen")  # Remplace "nom_ville" par le nom de la colonne contenant les noms de villes
+
+```
+
+```{r}
+head(caen_sf)
+```
+```{r}
+geometries <- st_geometry(caen_sf)
+```
+
+```{r}
+caen_non_geom <- st_set_geometry(caen_sf, NULL)
+```
+
+```{r}
+caen_sf$colonne_problematique <- unlist(caen_sf$colonne_problematique)
+```
+
+```{r}
+caen_shapefile <- st_read("14118_ZONE_URBA_20240627.shp")
+```
+
+```{r}
+zone_urbaine <- st_read("14118_ZONE_URBA_20240627.shp")
+```
+
+```{r}
+mapview(caen_sf, zcol = "nom_de_l_organisme")
+ggplot(data = zone_urbaine) +
+  geom_sf(fill = "lightblue", color = "darkblue") +
+  theme_minimal() +
+  labs(title = "Carte de la Ville de Caen")
+```
+```{r}
+mapview(zone_urbaine, col.regions = "lightblue", alpha.regions = 0.5) + 
+  mapview(caen_sf, zcol = "nom_de_l_organisme", alpha.regions = 0.8)
+```
+
+
+
+
+

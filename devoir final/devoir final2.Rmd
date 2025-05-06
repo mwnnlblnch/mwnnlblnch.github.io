@@ -1,0 +1,319 @@
+---
+title: "L’OFFRE CULTURELLE DANS LES VILLES MOYENNES"
+output: html_document
+date: "Projet de fin de semestre, finalisé le 07/05/2025, dans le cadre du cours “Construction et utilisation des SIG”, dispensé par B.Maranget [Groupe 7]"
+---
+
+
+### réalisé par Gaudin Chloé, Le Blanche Maïwenn et Rifflart Ambre 
+
+---
+
+# Étude SIG de l’offre culturelle dans les villes moyennes françaises : les cas de Caen (14118) , La Roche-sur-Yon (85191) et Champs-sur-Marne (77083). 
+
+---
+
+Selon Le Monde, l’« offre culturelle » désigne l’ensemble des activités, services et produits culturels mis à disposition du public par des institutions publiques, des associations ou encore des acteurs privés. Cette offre regroupe notamment les spectacles vivants, les expositions, les concerts, les projections de films, les conférences, ainsi que les ressources proposées par les bibliothèques et médiathèques. L’objectif est de rendre la culture accessible à tous, en favorisant la diversité artistique et la participation du public.  
+
+Dans le cadre de ce travail, nous proposons d’analyser l’offre culturelle à l’échelle de trois villes moyennes françaises, afin de mieux comprendre en quoi les spécificités géographiques et territoriales influencent cette offre.
+
+Nous tenterons de répondre à la question:
+
+--- 
+## Dans quelles mesures les spécificités géographiques d’une ville moyenne influencent-elles son offre culturelle ?
+___
+# Notre méthodologie SIG: 
+
+L’ensemble de l’analyse cartographique de l’offre culturelle dans les villes moyennes a été réalisé à l’aide du logiciel R, en mobilisant ses bibliothèques dédiées aux données spatiales et à la visualisation. La démarche a débuté par la collecte de données géographiques issues principalement du Géoportail de l’Urbanisme, et des données du site Data.gouv, qui fournissent des informations précises sur les équipements présents dans les communes françaises. Cette base a été complétée par des recherches manuelles sur les sites institutionnels des villes étudiées (Caen, La Roche-sur-Yon et Champs-sur-Marne).
+
+___
+# Notre objectif avant la réalisation sur R: 
+
+Chaque lieu a été enrichi de données attributaires : type, capacité d’accueil, fréquence des événements, diversité des activités et accessibilité. L’analyse spatiale a permis de cartographier leur répartition, de générer des zones de desserte et de comparer les trois villes étudiées (Caen, La Roche-sur-Yon, Champs-sur-Marne). Les résultats sont diffusés via une interface GitHub (notre site), avec des cartes et des scripts, dans une logique de transparence et de partage des données.
+
+# Les différentes cartographies permettant de constater des offres culturelles dépendamment des villes :
+
+## La ville de CAEN
+___
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(readxl)
+library(mapview)
+library(sf)         # Pour les fichiers géographiques (shapefile, GeoJSON, etc.)
+library(leaflet)  
+library(dplyr)  
+library(ggplot2)
+
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+plu <- st_read("14118_ZONE_URBA_20240627.shp")
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+plu_wgs84 <- st_transform(plu, crs = 4326)
+```
+
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+data_culture <- read_excel("caenmusees2.xlsx")
+# Vérifie que tu as bien des colonnes Longitude et Latitude
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+culture_sf <- st_as_sf(data_culture,
+                       coords = c("Longitude", "Latitude"),
+                       crs = 4326)
+```
+
+### Cartographie des musées au sein de la ville de CAEN sur son PLU
+```{r}
+mapview(plu_wgs84, alpha.regions = 0.3, col.regions = "lightblue") +
+  mapview(culture_sf, zcol = "Nom officiel du musée", color = "red")
+```
+
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+data_excel <- read_excel("caenmusees2.xlsx")
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+summary(data_excel)      # Résumé statistique
+head(data_excel)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+library(DT)
+datatable(data_excel)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+data_excel$Longitude <- as.numeric(data_excel$Longitude)
+data_excel$Latitude <- as.numeric(data_excel$Latitude)
+```
+
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+geojson_file <- "culturecheznous.geojson"
+cities_sf <- st_read(geojson_file)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+head(cities_sf)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+caen_sf <- cities_sf %>%
+  filter(commune == "Caen")  # Remplace "nom_ville" par le nom de la colonne contenant les noms de villes
+
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+head(caen_sf)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+geometries <- st_geometry(caen_sf)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+caen_non_geom <- st_set_geometry(caen_sf, NULL)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+caen_sf$colonne_problematique <- unlist(caen_sf$colonne_problematique)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+caen_shapefile <- st_read("14118_ZONE_URBA_20240627.shp")
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+zone_urbaine <- st_read("14118_ZONE_URBA_20240627.shp")
+```
+
+### Cartographie des lieux répondant au projet #Culturecheznous au sein de la ville de CAEN sur son PLU
+
+```{r}
+mapview(zone_urbaine, col.regions = "lightblue", alpha.regions = 0.5) + 
+  mapview(caen_sf, zcol = "nom_de_l_organisme", alpha.regions = 0.8)
+```
+
+# La ville de LA ROCHE SUR YON 
+
+___
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+yon_plu <- st_read("85191_zone_urba_20231128.shp")
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+yon_plu_wgs84 <- st_transform(yon_plu, crs = 4326)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+library(mapview)
+mapview(yon_plu_wgs84)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+yon_data_culture <- read_excel("caenmuseesyon.xlsx")
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+yon_culture_sf <- st_as_sf(yon_data_culture,
+                       coords = c("Longitude", "Latitude"),
+                       crs = 4326)
+```
+
+
+### Cartographie des musées au sein de la ville de LA ROCHE SUR YON sur son PLU
+
+```{r}
+mapview(yon_plu_wgs84, alpha.regions = 0.3, col.regions = "lightblue") +
+  mapview(yon_culture_sf, zcol = "Nom officiel du musée", color = "red")
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+geojson_file <- "culturecheznous.geojson"
+cities_sf <- st_read(geojson_file)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+head(cities_sf)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+yon_sf <- cities_sf %>%
+  filter(commune == "La Roche-sur-Yon")  # Remplace "nom_ville" par le nom de la colonne contenant les noms de villes
+
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+head(yon_sf)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+geometries <- st_geometry(yon_sf)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+yon_non_geom <- st_set_geometry(yon_sf, NULL)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+yon_sf$colonne_problematique <- unlist(yon_sf$colonne_problematique)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+yon_shapefile <- st_read("85191_zone_urba_20231128.shp")
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+zone_yon_urbaine <- st_read("85191_zone_urba_20231128.shp")
+```
+
+### Cartographie des lieux répondant au projet #Culturecheznous au sein de la ville de LA ROCHE SUR YON sur son PLU
+
+```{r}
+mapview(zone_yon_urbaine, col.regions = "lightblue", alpha.regions = 0.5) + 
+  mapview(yon_sf, zcol = "nom_de_l_organisme", alpha.regions = 0.8)
+```
+
+## La ville de CHAMPS SUR MARNE 
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+cha_plu <- st_read("77083_ZONE_URBA_20190930.shp")
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+cha_plu_wgs84 <- st_transform(cha_plu, crs = 4326)
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+library(mapview)
+mapview(cha_plu_wgs84)
+```
+### Cartographie des musées au sein de la ville de CHAMPS SUR MARNE sur son PLU
+
+```{r}
+mapview(cha_plu_wgs84, alpha.regions = 0.3, col.regions = "lightblue")
+```
+
+### Cartographie des lieux répondant au projet #Culturecheznous au sein de la ville de CHAMPS SUR MARNE sur son PLU
+
+```{r}
+mapview(cha_plu_wgs84, alpha.regions = 0.3, col.regions = "lightblue")
+```
+
+## Tableau de la répartition des festivals dans les différentes villes de notre étude :
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+data_excel_total <- read_excel("Tableau des festivals.xlsx")
+```
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+summary(data_excel_total)      # Résumé statistique
+head(data_excel_total)
+```
+
+```{r}
+library(DT)
+datatable(data_excel_total)
+```
+# Analyse des résultats : 
+
+Dans le cadre de notre étude comparative, notre attention s’est portée sur les musées, les lieux de festival, et les espaces présents sur le site Internet Culture chez nous, site regroupant plus de 1 000 contenus culturels en ligne, provenant de près de 500 acteurs culturels répartis sur tout le territoire français. Ils incluent des expositions virtuelles, des films, des documentaires, des podcasts, des concerts, des pièces de théâtre, des livres numériques, etc. (https://beta.gouv.fr/startups/culturecheznous.html?utm) 
+
+Caen dispose d’une offre dense et diversifiée. Les musées majeurs comme le Mémorial de Caen, les Archives départementales ou le musée des Beaux-Arts sont autant de lieux d’ancrage d’une mémoire régionale et nationale, souvent liés à son rôle historique central, (Seconde Guerre mondiale, duché de Normandie), sur lequel s’appuie une grande partie de son offre touristique. Ces musées présentent parfois eux-mêmes différentes offres culturelles, comme c’est le cas du Mémorial de Caen où ont lieu très régulièrement des conférences, des colloques, des projections de films. 
+
+Bien que ces équipements bénéficient d’une bonne intégration dans les dynamiques touristiques régionales et nationales, ils apparaissent tout de même sur le site Culture chez nous. Ce dispositif agit alors comme un outil de référencement de l’existant, tout en apportant à ces lieux de culture une visibilité nationale et numérique. 
+La ville bénéficie également d’un écosystème festif actif, en lien avec son statut de préfecture et de capitale régionale, qui attire financements, institutions et publics. On peut citer le “Younivers”, festival des pratiques artistiques des jeunes talents normands, “Époque, festival et salon du livre”, festival célébrant la littérature, ou encore le Festival de musique “Les Ondées” qui célèbre sa quatrième édition en 2025. Si ces différentes animations accueillent principalement un public caennais, il démontre bien la volonté de Caen de s’imposer culturellement comme une ville attractive, et de servir de référence à différentes échelles du département, voire de la région. 
+
+En 2024, l’Office du tourisme de Caen a accueilli 165000 visiteurs, ce qui peut refléter le nombre de touristes qui ont transité par ce bout de Normandie.
+
+La Roche-sur-Yon, de taille plus modeste, propose une offre bien organisée, structurée autour d’initiatives locales comme le musée municipal de la Roche-sur-Yon, présentant principalement des expositions d’arts temporaires thématiques, le Grand R, scène nationale accueillant principalement des concerts et des pièces de théâtre, ou encore le Quai M, salle de concert. Le recours à Culture chez nous y est limité, mais certaines initiatives ponctuelles viennent enrichir la programmation et toucher des publics géographiquement éloignés.
+Les festivals rythment la vie culturelle et permettent de renforcer l’attractivité d’une ville au patrimoine moins symbolique que celui de Caen. On y retrouve notamment le Festival International du Film de la Roche-sur-Yon, festival de cinéma créé en 2002.
+
+Ces deux villes, aux contextes historiques différents, s’ils présentent des offres culturelles s’adressant à un public principalement local, ont su varier leur programmation pour toucher des populations divers aux centres d'intérêts hétérogènes. 
+
+À l’inverse, Champs-sur-Marne apparaît comme nettement plus en retrait. Son seul pôle muséal identifié est le château du XVIIIe siècle (mais sans réelle fonction muséale continue). L’absence de musée actif et de cinéma dans la commune souligne un accès très restreint à la culture de proximité. Quelques festivals existent (Par Has’Art, Champs d’hiver, également non-répertorié sur OpenData), mais ils restent ponctuels. Ici, Culture chez nous joue pleinement son rôle initial : rendre accessible la culture dans des zones où elle est structurellement peu présente, via des dispositifs numériques, des ateliers ou des actions pédagogiques.
+Ces écarts ne relèvent pas du hasard : ils sont structurés par des facteurs historiques, institutionnels et spatiaux. Plus une ville concentre de fonctions administratives et symboliques, plus son offre culturelle est riche, stable et visible. À l’inverse, les communes périphériques, même proches de grands centres urbains comme Paris, peuvent souffrir d’un effet d’ombre culturelle, que les politiques publiques tentent de corriger.
+
+
+# Les difficultés rencontrées et limites du projet : 
+
+Le projet a rencontré des difficultés principalement liées à la création du script de cartographie en R, notamment pour générer des cartes interactives. De plus, l'absence de données précises de latitude et longitude pour certains équipements culturels a limité la précision géographique, freinant ainsi l'analyse complète de l'offre culturelle dans les villes étudiées.
+
+# Conclusion : 
+
+La répartition de l’offre culturelle est avant tout une réalité spatiale. Les équipements culturels —festivals, musées, etc— ne sont pas répartis de manière aléatoire : ils se concentrent souvent dans les centres-villes ou dans des zones bien desservies par les transports. Cette organisation reflète des choix d’aménagement, des logiques d’accessibilité et parfois des inégalités territoriales. En cartographiant ces équipements, on met en évidence la manière dont l’espace urbain structure l’accès à la culture. Cela permet aussi d’interroger les écarts entre quartiers centraux et périphériques, entre zones denses et zones moins peuplées, et donc de réfléchir à une répartition plus équilibrée.L’étude comparative des musées, des festivals et du dispositif Culture chez nous dans trois villes moyennes  (Caen, La Roche-sur-Yon et Champs-sur-Marne) révèle des dynamiques contrastées qui reflètent les effets directs de la géographie sur la répartition de l’offre culturelle.
+
+Caen dispose d’une offre dense et diversifiée. Les musées majeurs comme le Mémorial, les Archives départementales ou le musée des Beaux-Arts sont autant de lieux d’ancrage d’une mémoire régionale et nationale, souvent liés à son rôle historique central (Seconde Guerre mondiale, duché de Normandie). Bien que ces équipements soient déjà bien installés, ils apparaissent tout de même dans Culture chez nous, ce qui montre que ce dispositif agit aussi comme outil de référencement de l’existant, pas seulement comme mesure compensatoire. La ville bénéficie également d’un écosystème festif actif, en lien avec son statut de préfecture et de capitale régionale, qui attire financements, institutions et publics.
+
+La Roche-sur-Yon, de taille plus modeste, propose une offre bien organisée, structurée autour d’initiatives locales comme le musée municipal, le Grand R, ou encore le Quai M pour les musiques actuelles. Les festivals rythment la vie culturelle et permettent de renforcer l’attractivité d’une ville au patrimoine moins symbolique que celui de Caen. Le recours à Culture chez nous y est limité, mais certaines initiatives ponctuelles viennent enrichir la programmation et toucher des publics éloignés.
+
+À l’inverse, Champs-sur-Marne apparaît comme nettement plus en retrait. Son seul pôle muséal identifié est le château du XVIIIe siècle (mais sans réelle fonction muséale continue). L’absence de musée actif et de cinéma dans la commune souligne un accès très restreint à la culture de proximité. Quelques festivals existent (Par Has’Art, Champs d’hiver, également non-répertorié sur Opendata), mais ils restent ponctuels. Ici, Culture chez nous joue pleinement son rôle initial : amener la culture dans des zones où elle est structurellement peu présente, via des dispositifs mobiles, des ateliers ou des actions pédagogiques.
+Ces écarts ne relèvent pas du hasard : ils sont structurés par des facteurs historiques, institutionnels et spatiaux. Plus une ville concentre de fonctions administratives et symboliques, plus son offre culturelle est riche, stable et visible. À l’inverse, les communes périphériques, même proches de grands centres urbains comme Paris, peuvent souffrir d’un effet d’ombre culturelle, que les politiques publiques tentent de corriger.
+
+# Bibliographie : 
+
+L'Express. (2023). Comment les villes moyennes misent sur la culture pour attirer les habitants des métropoles. L'Express. https://www.lexpress.fr/culture/comment-les-villes-moyennes-misent-sur-la-culture-pour-attirer-les-habitants-des-metropoles-D4FRPGVNMJFZTHHELMHT4VXJ3A/?cmp_redirect=true
+
+
+INSEE. (2021). Accès à la culture: La France et ses territoires. Institut national de la statistique et des études économiques. https://www.insee.fr/fr/statistiques/5039867?sommaire=5040030
+
+
+Ministère de la Culture. (2023). Chiffres clés: Approche géographique de l'offre culturelle [fichepdf]. Ministère de la Culture.
+
+Ville de Caen. (nd). Culture. Site officiel de la ville de Caen. https://caen.fr/culture
+
+
+Ville de La Roche-sur-Yon. (nd). Culture. Site officiel de la ville de La Roche-sur-Yon. https://larochesuryon.fr/culture/
+
+
+Ville de La Roche-sur-Yon. (nd). Projet culturel de territoire 2023-2029 [fichepdf]. Ville de La Roche-sur-Yon. https://larochesuryon.fr/app/uploads/2024/07/pct.pdf
+
+[à noter le manque de sources pour la ville de Champs-sur-Marne, qui justifie le propos précédent]
+
